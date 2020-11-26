@@ -1,9 +1,12 @@
 header{
     min-height: 70px;
+    width: 100%;
     display: flex;
+    position: fixed;
     justify-content: space-around;
     align-items: center;
     overflow: hidden;
+    background-color: white;
 }
 header .logo a{
     text-decoration: none;
@@ -12,6 +15,11 @@ header .logo a{
 }
 header nav{
     display: flex;
+}
+
+.profile{
+    border-radius: 20px;
+    /* position: absolute; */
 }
 nav ul li{
     list-style: none;
@@ -59,8 +67,8 @@ header .close{
         flex-direction: column;
         background: white;
         z-index: 99;
-        opacity: 0.97;
-        transition: 0.5s linear;
+        opacity: 0.77;
+        transition: 0.2s linear;
     }
     header .menu,
     header .close{

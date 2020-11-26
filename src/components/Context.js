@@ -1,97 +1,81 @@
 import React, { Component } from 'react'
+import  firebase, { auth, provider }  from '../Utils/firebase'
 
 export const DataContext = React.createContext();
 
 export class DataProvider extends Component {
 
     state = {
-        products: [
-            {
-                "_id": "1",
-                "title": "Nike Shoes 01",
-                "src": "https://www.upsieutoc.com/images/2020/06/27/img1.jpg",
-                "description": "UI/UX designing, html css tutorials",
-                "content": "Welcome to our channel Dev AT. Here you can learn web designing, UI/UX designing, html css tutorials, css animations and css effects, javascript and jquery tutorials and related so on.",
-                "price": 23,
-                "colors": ["red", "black", "crimson", "teal"],
-                "count": 1
-            },
-            {
-                "_id": "2",
-                "title": "Nike Shoes 02",
-                "src": "https://www.upsieutoc.com/images/2020/06/27/img2.jpg",
-                "description": "UI/UX designing, html css tutorials",
-                "content": "Welcome to our channel Dev AT. Here you can learn web designing, UI/UX designing, html css tutorials, css animations and css effects, javascript and jquery tutorials and related so on.",
-                "price": 19,
-                "colors": ["red", "crimson", "teal"],
-                "count": 1
-            },
-            {
-                "_id": "3",
-                "title": "Nike Shoes 03",
-                "src": "https://www.upsieutoc.com/images/2020/06/27/img3.jpg",
-                "description": "UI/UX designing, html css tutorials",
-                "content": "Welcome to our channel Dev AT. Here you can learn web designing, UI/UX designing, html css tutorials, css animations and css effects, javascript and jquery tutorials and related so on.",
-                "price": 50,
-                "colors": ["lightblue", "white", "crimson", "teal"],
-                "count": 1
-            },
-            {
-                "_id": "4",
-                "title": "Nike Shoes 04",
-                "src": "https://www.upsieutoc.com/images/2020/06/27/img4.jpg",
-                "description": "UI/UX designing, html css tutorials",
-                "content": "Welcome to our channel Dev AT. Here you can learn web designing, UI/UX designing, html css tutorials, css animations and css effects, javascript and jquery tutorials and related so on.",
-                "price": 15,
-                "colors": ["orange", "black", "crimson", "teal"],
-                "count": 1
-            },
-            {
-                "_id": "5",
-                "title": "Nike Shoes 05",
-                "src": "https://www.upsieutoc.com/images/2020/06/27/img5.jpg",
-                "description": "UI/UX designing, html css tutorials",
-                "content": "Welcome to our channel Dev AT. Here you can learn web designing, UI/UX designing, html css tutorials, css animations and css effects, javascript and jquery tutorials and related so on.",
-                "price": 10,
-                "colors": ["orange", "black", "crimson", "teal"],
-                "count": 1
-            },
-            {
-                "_id": "6",
-                "title": "Nike Shoes 06",
-                "src": "https://www.upsieutoc.com/images/2020/06/27/img6.jpg",
-                "description": "UI/UX designing, html css tutorials",
-                "content": "Welcome to our channel Dev AT. Here you can learn web designing, UI/UX designing, html css tutorials, css animations and css effects, javascript and jquery tutorials and related so on.",
-                "price": 17,
-                "colors": ["orange", "black", "crimson", "teal"],
-                "count": 1
-            }
-        ],
+        user: null,
+        products: [],
         cart: [],
-        total: 0
-        
+        total: 0,
+        orders: null
     };
 
-    addCart = (id) =>{
-        const {products, cart} = this.state;
+
+    resetData = () => {
+        this.setState({cart: [], total: 0})
+    }
+
+    loginGoogle = () => {
+        auth().signInWithPopup(provider).then((users)=>{
+            var response =  firebase.firestore().collection('users').doc(users.user.uid).get();
+            response.then((doc)=>{
+                if(doc.exists){
+                    this.setState({user: doc.data()})
+                    // doc.data()
+                } else {
+                    const newDate = new Date().toISOString();
+                    const data = {
+                        'date': newDate,
+                        'uid' : users.user.uid,
+                        'displayName' : users.user.displayName,
+                        'email' : users.user.email,
+                        'photoUrl' : users.user.photoURL,
+                        'numberPhone' : users.user.phoneNumber,
+                        'admin' : false
+                     }
+                    var response =  firebase.firestore().collection('users').doc(users.user.uid).set(data);
+
+                    response.then(()=>{
+                        console.log('Listo!')
+                        var responseData =  firebase.firestore().collection('users').doc(users.user.uid).get();
+                        responseData.then((docts)=>{
+                            this.setState({user: docts.data()})
+                        })
+                    })
+                }
+            })
+        })
+    }
+
+    addCart = (producter) =>{
+
+        const { cart } = this.state;
+
+        console.log(producter.uid)
         const check = cart.every(item =>{
-            return item._id !== id
+            return item.uid !== producter.uid
         })
         if(check){
-            const data = products.filter(product =>{
-                return product._id === id
-            })
-            this.setState({cart: [...cart,...data]})
-        }else{
-            alert("The product has been added to cart.")
+            const data = [{
+                ...producter,
+                quantity:1
+            }]
+
+            this.setState({cart:[...cart,...data], total: producter.price})
+
+        } else {
+            alert("Este producto ya fue añadido al carrito")
         }
     };
 
     reduction = id =>{
         const { cart } = this.state;
         cart.forEach(item =>{
-            if(item._id === id){
-                item.count === 1 ? item.count = 1 : item.count -=1;
+            if(item.uid === id){
+                item.quantity === 1 ? item.quantity = 1 : item.quantity -=1;
             }
         })
         this.setState({cart: cart});
@@ -101,8 +85,9 @@ export class DataProvider extends Component {
     increase = id =>{
         const { cart } = this.state;
         cart.forEach(item =>{
-            if(item._id === id){
-                item.count += 1;
+            if(item.uid === id){
+                console.log(item.quantity)
+                item.quantity ++;
             }
         })
         this.setState({cart: cart});
@@ -110,10 +95,10 @@ export class DataProvider extends Component {
     };
 
     removeProduct = id =>{
-        if(window.confirm("Do you want to delete this product?")){
+        if(window.confirm("Quieres eliminar este producto?")){
             const {cart} = this.state;
             cart.forEach((item, index) =>{
-                if(item._id === id){
+                if(item.uid === id){
                     cart.splice(index, 1)
                 }
             })
@@ -126,15 +111,30 @@ export class DataProvider extends Component {
     getTotal = ()=>{
         const{cart} = this.state;
         const res = cart.reduce((prev, item) => {
-            return prev + (item.price * item.count);
+            return prev + (item.price * item.quantity);
         },0)
         this.setState({total: res})
     };
     
+    componentWillMount(){
+      var response =  firebase.firestore().collection('products').get();
+      response.then((doc)=>{
+          this.setState({products: doc.docs })
+          if(this.state.user){
+            firebase.firestore().collection('orders').where('userID','==', this.state.user.uid).get().then((docer)=>{
+                this.setState({orders: docer.docs})
+            })
+        }
+      });
+
+    //   this.getOrders();
+    }
     componentDidUpdate(){
         localStorage.setItem('dataCart', JSON.stringify(this.state.cart))
         localStorage.setItem('dataTotal', JSON.stringify(this.state.total))
+        localStorage.setItem('Useres', JSON.stringify(this.state.user))
     };
+
 
     componentDidMount(){
         const dataCart = JSON.parse(localStorage.getItem('dataCart'));
@@ -145,15 +145,20 @@ export class DataProvider extends Component {
         if(dataTotal !== null){
             this.setState({total: dataTotal});
         }
+        const dataUser = JSON.parse(localStorage.getItem('Useres'));
+        console.log(dataUser)
+        if(dataUser !== null){
+            this.setState({user: dataUser});
+        }
     }
    
 
     render() {
-        const {products, cart,total} = this.state;
-        const {addCart,reduction,increase,removeProduct,getTotal} = this;
+        const {products, cart,total, user, orders} = this.state;
+        const {addCart,reduction,increase,removeProduct,getTotal, loginGoogle, resetData} = this;
         return (
             <DataContext.Provider 
-            value={{products, addCart, cart, reduction,increase,removeProduct,total,getTotal}}>
+            value={{products, addCart, cart, reduction,increase,removeProduct,total,getTotal, loginGoogle, user, resetData, orders}}>
                 {this.props.children}
             </DataContext.Provider>
         )

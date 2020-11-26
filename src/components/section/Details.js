@@ -15,7 +15,7 @@ export class Details extends Component {
         if(this.props.match.params.id){
             const res = this.context.products;
             const data = res.filter(item =>{
-                return item._id === this.props.match.params.id
+                return item.data().uid === this.props.match.params.id
             })
             this.setState({product: data})
         }
@@ -34,17 +34,17 @@ export class Details extends Component {
             <>
                 {
                     product.map(item =>(
-                        <div className="details" key={item._id}>
-                            <img src={item.src} alt=""/>
+                        <div className="details" key={item.id}>
+                            <img src={item.data().src} alt=""/>
                             <div className="box">
                                 <div className="row">
-                                    <h2>{item.title}</h2>
-                                    <span>${item.price}</span>
+                                    <h2>{item.data().title}</h2>
+                                    <span>${item.data().price}</span>
                                 </div>
-                                <Colors colors={item.colors}/>
-                                <p>{item.description}</p>
-                                <p>{item.content}</p>
-                                <Link to="/cart" className="cart" onClick={() => addCart(item._id)}>
+                                <Colors colors={item.data().colors}/>
+                                <p>{item.data().description}</p>
+                                <p>{item.data().content}</p>
+                                <Link to="/cart" className="cart" onClick={() => addCart(item.data())}>
                                     Add to cart
                                 </Link>
                             </div>

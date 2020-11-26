@@ -14,11 +14,14 @@ code {
     monospace;
 }
 .app{
-  max-width: 1200px;
+  /* max-width: 1200px; */
   width: 100%;
+  display: inline-block;
+  justify-content: center;
   margin: 0 auto;
 }
 section{
   box-shadow: 0 0 5px #ccc;
-  padding: 15px 10px;
+  margin-top: 90px;
+  /* padding: 15px 10px; */
 }
